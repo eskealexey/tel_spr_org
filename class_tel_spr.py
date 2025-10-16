@@ -16,31 +16,54 @@ class ParserXls:
         return self.filexls
 
     def parser(self, output_dir="JSON", output_file="all_sheets.json"):
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        """
+        Функция для парсинга Excel-файла и сохранения данных в JSON
+        :param output_dir:
+        :param output_file:
+        :return:
+        """
+        if not self.all_data:  # Парсим только если данные еще не загружены
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
 
-        excel_file = pd.ExcelFile(self.filexls)
-        sheet_names = excel_file.sheet_names
+            excel_file = pd.ExcelFile(self.filexls)
+            sheet_names = excel_file.sheet_names
 
-        all_data = {}
+            all_data = {}
 
-        for sheet_name in sheet_names:
-            df = pd.read_excel(self.filexls, sheet_name=sheet_name)
+            for sheet_name in sheet_names:
+                df = pd.read_excel(self.filexls, sheet_name=sheet_name)
 
-            # Замена NaN на пустые строки для корректного JSON
-            df = df.fillna('')
+                # Замена NaN на пустые строки для корректного JSON
+                df = df.fillna('')
 
-            # Сохраняем данные листа как список словарей
-            all_data[sheet_name] = df.to_dict(orient='records')
+                # Сохраняем данные листа как список словарей
+                all_data[sheet_name] = df.to_dict(orient='records')
 
-        json_path = os.path.join(output_dir, output_file)
+            json_path = os.path.join(output_dir, output_file)
 
-        with open(json_path, 'w', encoding='utf-8') as f:
-            json.dump(all_data, f, ensure_ascii=False, indent=2)
+            with open(json_path, 'w', encoding='utf-8') as f:
+                json.dump(all_data, f, ensure_ascii=False, indent=2)
 
-        self.all_data = all_data
-
+            self.all_data = all_data
         return self.all_data
+
+    def format_tel(self, tel):
+        """Форматирование телефонного номера"""
+        if not isinstance(tel, (str, int)):
+            return tel
+
+        tel_str = str(tel).strip()
+
+        # Убираем все нецифровые символы
+        digits = ''.join(filter(str.isdigit, tel_str))
+
+        if len(digits) == 6:
+            return f"{digits[0:2]}-{digits[2:4]}-{digits[4:]}"
+        elif len(digits) == 5:
+            return f"{digits[0:1]}-{digits[1:3]}-{digits[3:]}"
+        else:
+            return tel_str  # Возвращаем как есть, если не подходит под форматы
 
 
 class SprOsfr(ParserXls):
@@ -71,6 +94,15 @@ class SprOsfr(ParserXls):
             if sheet_name in self.target_sheets:
                 # print(sheet_name)
                 for row in data[sheet_name]:
+
+                    # # ---------------------------------------------------------------------------------------------------------
+                    num_tel = row.get("Unnamed: 0", '')
+                    num_tel = str(num_tel).strip()
+                    if "-" not in num_tel and len(num_tel) > 0 and num_tel.isdigit():
+                        num_tel = self.format_tel(num_tel)
+                        row["Unnamed: 0"] = num_tel
+                    # # ---------------------------------------------------------------------------------------------------------
+
                     if row.get("Unnamed: 8", '') != '':
                         # Создаем новую строку с замененными ключами
                         new_row = {}
@@ -107,7 +139,6 @@ class SprKs(ParserXls):
         "Unnamed: 4": "Отчество",
         "Unnamed: 5": "Должность",
         "Unnamed: 6": "Место расположения",
-        # "Unnamed: 7": "Отдел"
     }
 
     def __init__(self, filexls):
@@ -126,6 +157,16 @@ class SprKs(ParserXls):
                     value = row.get("Unnamed: 0", '')
                     if required_chars in str(value):
                         otdel = value
+
+
+                    # ---------------------------------------------------------------------------------------------------------
+                    num_tel = row.get("Unnamed: 1", '')
+                    num_tel = str(num_tel).strip()
+                    if "-" not in num_tel and len(num_tel) > 0 and num_tel.isdigit():
+                        num_tel = self.format_tel(num_tel)
+                        row["Unnamed: 1"] = num_tel
+                    # ---------------------------------------------------------------------------------------------------------
+
 
                     if row.get("Unnamed: 6", '') != '':
                         # Создаем новую строку с замененными ключами
@@ -154,25 +195,23 @@ class SprKs(ParserXls):
         print(f"Данные успешно записаны в {json_path}")
 
 
-# if __name__ == '__main__':
-#     ks = SprKs("telef.xls")
-#     lst_ks = ks.obrabotka_ks()
-#     ks.save_to_json()
-if __name__ == '__main__':
+def load_xls(path_xls):
     try:
-        # Обработка Клиентских служб
-        ks = SprKs("telef.xls")
-        lst_ks = ks.obrabotka_ks()
-        ks.save_to_json()
+        # Создаем объект один раз для каждого типа
+        ks = SprKs(path_xls)
+        ks_data = ks.obrabotka_ks()  # Получаем данные
+        ks.save_to_json()  # Сохраняем
 
-        # Обработка ОСФР
-        osfr = SprOsfr("telef.xls")
-        lst_osfr = osfr.obrabotka_osfr()
+        osfr = SprOsfr(path_xls)
+        osfr_data = osfr.obrabotka_osfr()
         osfr.save_to_json(output_file='osfr.json')
 
         print("Обработка завершена успешно!")
+        return ks_data, osfr_data  # Возвращаем данные для дальнейшего использования
 
     except FileNotFoundError as e:
         print(f"Ошибка: {e}")
+        return None, None
     except Exception as e:
         print(f"Неожиданная ошибка: {e}")
+        return None, None

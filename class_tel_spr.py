@@ -109,7 +109,7 @@ class SprOsfr(ParserXls):
                         for old_key, value in row.items():
                             # Если ключ есть в target_map, используем новое название, иначе оставляем старый
                             new_key = self.target_map.get(old_key, old_key)
-                            new_row[new_key] = value
+                            new_row[new_key] = str(value).strip()
                         list_strok.append(new_row)
         if len(list_strok) > 1:
             list_strok_ = list_strok[1:]
@@ -174,7 +174,7 @@ class SprKs(ParserXls):
                         new_row['отдел'] = otdel
                         for old_key, value in row.items():
                             new_key = self.target_map.get(old_key, old_key)
-                            new_row[new_key] = value
+                            new_row[new_key] = str(value).strip()
 
                         list_strok.append(new_row)
         if len(list_strok) > 1:

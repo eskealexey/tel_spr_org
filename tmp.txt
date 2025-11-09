@@ -1,0 +1,127 @@
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
+import json
+
+class Window:
+    def __init__(self, root):
+        self.app = App()  # Композиция вместо наследования
+        self.root = root
+        self.root.geometry("900x500")
+        self.root.title(f'{self.app.description} v.{self.app.version}')
+        self.root.resizable(True, True)
+        self.create_menu()
+        self.create_widgets()
+
+    def create_menu(self):
+        menubar = tk.Menu(self.root)
+        file_menu = tk.Menu(menubar, tearoff=0)
+        file_menu.add_command(label="Открыть", command=self.open_file_xls)
+        file_menu.add_command(label="Открыть JSON", command=self.open_file_json)  # Новая команда
+        file_menu.add_separator()
+        file_menu.add_command(label="Выход", command=self.root.quit)
+        menubar.add_cascade(label="Файл", menu=file_menu)
+        self.root.config(menu=menubar)
+
+    def open_file_xls(self):
+        file_path = filedialog.askopenfilename(
+            filetypes=[("Excel files", "*.xlsx *.xls"), ("All files", "*.*")]
+        )
+        if not file_path:
+            return
+        try:
+            load_xls(file_path)
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось загрузить файл:\n{str(e)}")
+
+    def open_file_json(self):
+        file_path = filedialog.askopenfilename(
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+        )
+        if not file_path:
+            return
+        try:
+            self.load_json(file_path)
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось загрузить JSON файл:\n{str(e)}")
+
+    def load_json(self, file_path):
+        """Загрузка и отображение JSON данных"""
+        with open(file_path, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+
+        # Очищаем существующие данные в таблице
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+
+        # Добавляем данные в таблицу
+        for item in data:
+            self.tree.insert("", "end", values=(
+                item.get("ФАМИЛИЯ", ""),
+                item.get("ИМЯ", ""),
+                item.get("ОТЧЕСТВО", ""),
+                item.get("ДОЛЖНОСТЬ", ""),
+                item.get("Отдел", ""),
+                item.get("Городской номер", ""),
+                item.get("Кор. тел.", ""),
+                item.get("№ комн.", ""),
+                item.get("Место расположения", "")
+            ))
+
+    def create_widgets(self):
+        frame_top = tk.Frame(self.root)
+        frame_top.pack(padx=10, pady=10, fill='x')
+
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(fill='both', expand=True, padx=10, pady=10)
+
+        # Вкладка 1: Контакты
+        self.frame_osfr = ttk.Frame(self.notebook)
+        self.notebook.add(self.frame_osfr, text="ОСФР")
+
+        # Вкладка 2: Отделы
+        self.frame_ks = ttk.Frame(self.notebook)
+        self.notebook.add(self.frame_ks, text="Клиентские службы")
+
+        # Создаем виджеты для вкладки "ОСФР"
+        self.create_osfr_tab()
+
+    def create_osfr_tab(self):
+        # Верхняя панель
+        frame_top = tk.Frame(self.frame_osfr)
+        frame_top.pack(padx=10, pady=10, fill='x')
+
+        # Создаём Treeview с колонками
+        columns = ("Фамилия", "Имя", "Отчество", "Должность", "Отдел",
+                  "Городской номер", "Кор. тел.", "№ комн.", "Место расположения")
+
+        self.tree = ttk.Treeview(self.frame_osfr, columns=columns, show="headings", height=15)
+
+        # Настраиваем заголовки колонок
+        for col in columns:
+            self.tree.heading(col, text=col)
+            self.tree.column(col, width=100, anchor="w")
+
+        # Настраиваем ширину колонок
+        self.tree.column("Фамилия", width=120)
+        self.tree.column("Имя", width=100)
+        self.tree.column("Отчество", width=120)
+        self.tree.column("Должность", width=150)
+        self.tree.column("Отдел", width=120)
+        self.tree.column("Городской номер", width=100)
+        self.tree.column("Кор. тел.", width=80)
+        self.tree.column("№ комн.", width=60)
+        self.tree.column("Место расположения", width=200)
+
+        # Scrollbar для таблицы
+        scrollbar = ttk.Scrollbar(self.frame_osfr, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scrollbar.set)
+
+        # Позиционируем виджеты
+        self.tree.pack(fill='both', expand=True, side='left', padx=5, pady=5)
+        scrollbar.pack(side='right', fill='y')
+
+# Пример использования
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = Window(root)
+    root.mainloop()

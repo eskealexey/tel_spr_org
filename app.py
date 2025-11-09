@@ -1,3 +1,4 @@
+import json
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
@@ -11,11 +12,11 @@ class App:
         self.author = "Eske Alexey"
         self.description = "Телефонный справочник"
 
-class Window(App):
+class Window:
     def __init__(self, root):
         self.app = App()  # Композиция вместо наследования
         self.root = root
-        self.root.geometry("900x500")
+        self.root.geometry("1027x500")
         self.root.title(f'{self.app.description} v.{self.app.version}')
         self.root.resizable(True, True)
         self.create_menu()
@@ -59,21 +60,83 @@ class Window(App):
         # Создаем виджеты для вкладки "ОСФР"
         self.create_osfr_tab()
 
+    def load_json(self, file_path):
+        """Загрузка и отображение JSON данных"""
+        with open(file_path, 'r', encoding='utf-8') as file:
+            data = json.load(file)
 
+        # Очищаем существующие данные в таблице
+        for item in self.tree.get_children():
+            self.tree.delete(item)
 
+        # Добавляем данные в таблицу
+        for item in data:
+            self.tree.insert("", "end", values=(
+                item.get("Городской номер", ""),
+                item.get("Кор. тел.", ""),
+                item.get("№ комн.", ""),
+                item.get("ФАМИЛИЯ", ""),
+                item.get("ИМЯ", ""),
+                item.get("ОТЧЕСТВО", ""),
+                item.get("ДОЛЖНОСТЬ", ""),
+                item.get("Отдел", ""),
+                item.get("Место расположения", "")
+            ))
 
     def create_osfr_tab(self):
+        # Верхняя панель
         frame_top = tk.Frame(self.frame_osfr)
         frame_top.pack(padx=10, pady=10, fill='x')
-        # tk.Label(frame_top, text="МОЛ:", font=('Arial', 10)).pack(side='left')
-        # # Создаём Treeview и Scrollbar
-        # self.tree = ttk.Treeview(self.root)
-        # scrollbar = ttk.Scrollbar(self.root, orient="vertical", command=self.tree.yview)
-        #
-        # # Позиционируем виджеты
-        # self.tree.pack(fill=tk.BOTH, expand=True, side=tk.LEFT, padx=5, pady=5)
-        # scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        #
-        # # Связываем Treeview с Scrollbar
-        # self.tree.config(yscrollcommand=scrollbar.set)
+
+        # Создаем и настраиваем стиль
+        style = ttk.Style()
+        style.configure("Custom.Treeview.Heading",
+                        padding=(0, 5, 0, 25),
+                        # rowheight=40,  # Высота строки заголовка
+                        font=('Arial', 10, 'bold'))  # Можно уменьшить шрифт если нужно
+
+        # # Увеличиваем высоту строки заголовков
+        # style = ttk.Style()
+        # style.configure("Treeview.Heading", rowheight=40)
+
+        columns = ("city_phone", "internal_phone", "room", "last_name", "first_name", "patronymic", "position",
+                   "department", "location")
+        # Многострочные заголовки
+        headings = {
+            "city_phone": "Городской\nномер",
+            "internal_phone": "Корпоративный\nтелефон",
+            "room": "Номер\nкомнаты",
+            "last_name": "Фамилия",
+            "first_name": "Имя",
+            "patronymic": "Отчество",
+            "position": "Должность",
+            "department": "Отдел",
+            "location": "Место\nрасположения"
+        }
+        # self.tree = ttk.Treeview(self.frame_osfr, columns=columns, show="headings", height=15)
+        self.tree = ttk.Treeview(self.frame_osfr, columns=columns, show="headings",
+                                 height=15, style="Custom.Treeview")
+        # Сначала настраиваем все заголовки
+        for col in columns:
+            self.tree.heading(col, text=headings[col], anchor="center")
+            self.tree.column(col, width=100, anchor="w")
+
+        # Затем настраиваем индивидуальные ширины (ВНЕ цикла)
+        self.tree.column("last_name", width=120)
+        self.tree.column("first_name", width=100)
+        self.tree.column("patronymic", width=120)
+        self.tree.column("position", width=150)
+        self.tree.column("department", width=120)
+        self.tree.column("city_phone", width=100)
+        self.tree.column("internal_phone", width=100)
+        self.tree.column("room", width=80)
+        self.tree.column("location", width=200)
+
+        # Scrollbar для таблицы
+        scrollbar = ttk.Scrollbar(self.frame_osfr, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scrollbar.set)
+
+        # Позиционируем виджеты
+        self.tree.pack(fill='both', expand=True, side='left', padx=5, pady=5)
+        scrollbar.pack(side='right', fill='y')
 

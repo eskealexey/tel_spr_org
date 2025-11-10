@@ -21,6 +21,7 @@ class Window:
         self.root.resizable(True, True)
         self.create_menu()
         self.create_widgets()
+        self.load_json_osfr('JSON/osfr.json')
 
     def create_menu(self):
         menubar = tk.Menu(self.root)
@@ -39,6 +40,7 @@ class Window:
             return
         try:
             load_xls(file_path)
+            self.load_json_osfr('JSON/osfr.json')
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось загрузить файл:\n{str(e)}")
 
@@ -49,39 +51,43 @@ class Window:
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(fill='both', expand=True, padx=10, pady=10)
 
-        # Вкладка 1: Контакты
+        # Вкладка 1: телефоны ОСФР
         self.frame_osfr= ttk.Frame(self.notebook)
         self.notebook.add(self.frame_osfr, text="ОСФР")
 
-        # Вкладка 2: Отделы
+        # Вкладка 2: телефоны клиентских служб
         self.frame_ks = ttk.Frame(self.notebook)
         self.notebook.add(self.frame_ks, text="Клиентские службы")
 
         # Создаем виджеты для вкладки "ОСФР"
         self.create_osfr_tab()
+        self.load_json_osfr('JSON/osfr.json')
 
-    def load_json(self, file_path):
+    def load_json_osfr(self, file_path):
         """Загрузка и отображение JSON данных"""
-        with open(file_path, 'r', encoding='utf-8') as file:
-            data = json.load(file)
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                data = json.load(file)
 
-        # Очищаем существующие данные в таблице
-        for item in self.tree.get_children():
-            self.tree.delete(item)
+            # Очищаем существующие данные в таблице
+            for item in self.tree.get_children():
+                self.tree.delete(item)
 
-        # Добавляем данные в таблицу
-        for item in data:
-            self.tree.insert("", "end", values=(
-                item.get("Городской номер", ""),
-                item.get("Кор. тел.", ""),
-                item.get("№ комн.", ""),
-                item.get("ФАМИЛИЯ", ""),
-                item.get("ИМЯ", ""),
-                item.get("ОТЧЕСТВО", ""),
-                item.get("ДОЛЖНОСТЬ", ""),
-                item.get("Отдел", ""),
-                item.get("Место расположения", "")
-            ))
+            # Добавляем данные в таблицу
+            for item in data:
+                self.tree.insert("", "end", values=(
+                    item.get("Городской номер", ""),
+                    item.get("Кор. тел.", ""),
+                    item.get("№ комн.", ""),
+                    item.get("ФАМИЛИЯ", ""),
+                    item.get("ИМЯ", ""),
+                    item.get("ОТЧЕСТВО", ""),
+                    item.get("ДОЛЖНОСТЬ", ""),
+                    item.get("Отдел", ""),
+                    item.get("Место расположения", "")
+                ))
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Не удалось загрузить файл:\n{str(e)}")
 
     def create_osfr_tab(self):
         # Верхняя панель
@@ -95,12 +101,9 @@ class Window:
                         # rowheight=40,  # Высота строки заголовка
                         font=('Arial', 10, 'bold'))  # Можно уменьшить шрифт если нужно
 
-        # # Увеличиваем высоту строки заголовков
-        # style = ttk.Style()
-        # style.configure("Treeview.Heading", rowheight=40)
-
         columns = ("city_phone", "internal_phone", "room", "last_name", "first_name", "patronymic", "position",
                    "department", "location")
+
         # Многострочные заголовки
         headings = {
             "city_phone": "Городской\nномер",

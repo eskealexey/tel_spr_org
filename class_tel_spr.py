@@ -158,7 +158,6 @@ class SprKs(ParserXls):
                     if required_chars in str(value):
                         otdel = value
 
-
                     # ---------------------------------------------------------------------------------------------------------
                     num_tel = row.get("Unnamed: 1", '')
                     num_tel = str(num_tel).strip()
@@ -166,7 +165,6 @@ class SprKs(ParserXls):
                         num_tel = self.format_tel(num_tel)
                         row["Unnamed: 1"] = num_tel
                     # ---------------------------------------------------------------------------------------------------------
-
 
                     if row.get("Unnamed: 6", '') != '':
                         # Создаем новую строку с замененными ключами

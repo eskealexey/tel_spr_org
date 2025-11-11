@@ -17,7 +17,7 @@ class Window:
     Класс окна приложения
     """
     def __init__(self, root):
-        self.podrazdel_list = ["--- Выберите МОЛ ---", ]
+        self.podrazdel_list = ["--- Выберите подразделение ---", ]
         self.app = App()  # Композиция вместо наследования
         self.root = root
         self.root.geometry("1200x500")
@@ -34,7 +34,7 @@ class Window:
         file_menu = tk.Menu(menubar, tearoff=0)
         file_menu.add_command(label="Открыть", command=self.open_file_xls)
         file_menu.add_separator()
-        file_menu.add_command(label="Выход", command=self.root.quit)
+        file_menu.add_command(label="Выход", command=self.root.destroy)
         menubar.add_cascade(label="Файл", menu=file_menu)
         self.root.config(menu=menubar)
 
@@ -100,9 +100,27 @@ class Window:
                     item.get("Отдел", ""),
                     item.get("Место расположения", "")
                 ))
+            self.podrazdel_list = self.create_podrazdel_list(data)
+            self.update_combobox()
+            print(self.podrazdel_list)
+
         except Exception as e:
             messagebox.showerror("Ошибка", f"Нет данных для отображения:\nЗагрузите файл с номерами телефонов")
             print(str(e))
+
+    def create_podrazdel_list(self, data):
+        lst = []
+        for item in data:
+            if item.get("Отдел") not in lst and item.get("Отдел") != "":
+                lst.append(item.get("Отдел"))
+        lst = ["--- Выберите подразделение ---", ] + lst
+        return lst
+
+    def podrazdel_filter(self, event=None):  # Добавьте реализацию
+        # Фильтрация списка подразделений по введенному тексту
+        current_text = self.podrazdel_var.get()
+        filtered_list = [item for item in self.podrazdel_list if current_text.lower() in item.lower()]
+        self.podrazdel_combobox['values'] = filtered_list
 
     def create_osfr_tab(self):
         """
@@ -125,7 +143,7 @@ class Window:
             width=50
         )
         self.podrazdel_combobox.pack(side='left', padx=5)
-        self.podrazdel_combobox.bind("<KeyRelease>", self.podrazdel_list)
+        self.podrazdel_combobox.bind("<KeyRelease>", self.podrazdel_filter())
         self.podrazdel_combobox.bind("<<ComboboxSelected>>", self.on_select)
 
         # Создаем и настраиваем стиль
@@ -175,5 +193,20 @@ class Window:
         self.tree.pack(fill='both', expand=True, side='left', padx=5, pady=5)
         scrollbar.pack(side='right', fill='y')
 
-    def on_select(self):
-        pass
+    def on_select(self, event=None):
+        selected_dept = self.podrazdel_var.get()
+        self.filter_treeview(selected_dept)
+
+    def filter_treeview(self, department):
+        """Фильтрация данных в treeview по отделу"""
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+
+
+  # Здесь нужно добавить логику фильтрации данных
+        # из вашего JSON файла по выбранному отделу
+
+    def update_combobox(self):
+        """Обновление значений combobox"""
+        self.podrazdel_combobox['values'] = self.podrazdel_list
+        # self.podrazdel_combobox.set("")

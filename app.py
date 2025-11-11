@@ -13,17 +13,23 @@ class App:
         self.description = "Телефонный справочник"
 
 class Window:
+    """
+    Класс окна приложения
+    """
     def __init__(self, root):
+        self.podrazdel_list = ["--- Выберите МОЛ ---", ]
         self.app = App()  # Композиция вместо наследования
         self.root = root
-        self.root.geometry("1027x500")
+        self.root.geometry("1200x500")
         self.root.title(f'{self.app.description} v.{self.app.version}')
         self.root.resizable(True, True)
         self.create_menu()
         self.create_widgets()
-        self.load_json_osfr('JSON/osfr.json')
 
     def create_menu(self):
+        """
+        Создает меню для приложения
+        """
         menubar = tk.Menu(self.root)
         file_menu = tk.Menu(menubar, tearoff=0)
         file_menu.add_command(label="Открыть", command=self.open_file_xls)
@@ -33,6 +39,9 @@ class Window:
         self.root.config(menu=menubar)
 
     def open_file_xls(self):
+        """
+        Открывает диалоговое окно для выбора файла
+        """
         file_path = filedialog.askopenfilename(
             filetypes=[("Excel files", "*.xlsx *.xls"), ("All files", "*.*")]
         )
@@ -45,6 +54,9 @@ class Window:
             messagebox.showerror("Ошибка", f"Не удалось загрузить файл:\n{str(e)}")
 
     def create_widgets(self):
+        """
+        Создает виджеты для окна приложения
+        """
         frame_top = tk.Frame(self.root)
         frame_top.pack(padx=10, pady=10, fill='x')
 
@@ -64,7 +76,9 @@ class Window:
         self.load_json_osfr('JSON/osfr.json')
 
     def load_json_osfr(self, file_path):
-        """Загрузка и отображение JSON данных"""
+        """
+        Загрузка и отображение JSON данных в таблицу OSFR
+        """
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
                 data = json.load(file)
@@ -87,18 +101,37 @@ class Window:
                     item.get("Место расположения", "")
                 ))
         except Exception as e:
-            messagebox.showerror("Ошибка", f"Не удалось загрузить файл:\n{str(e)}")
+            messagebox.showerror("Ошибка", f"Нет данных для отображения:\nЗагрузите файл с номерами телефонов")
+            print(str(e))
 
     def create_osfr_tab(self):
+        """
+        Создает таблицу для телефонов ОСФР
+        """
         # Верхняя панель
         frame_top = tk.Frame(self.frame_osfr)
         frame_top.pack(padx=10, pady=10, fill='x')
+
+        label_found = tk.Label(frame_top, text="Фильтр:")
+        label_found.pack(side='left', padx=5)
+
+        # Поле выбора МОЛ, с возможностью поиска
+        self.podrazdel_var = tk.StringVar()
+        self.podrazdel_combobox = ttk.Combobox(
+            frame_top,
+            textvariable=self.podrazdel_var,
+            state="normal",
+            font=('Arial', 10),
+            width=50
+        )
+        self.podrazdel_combobox.pack(side='left', padx=5)
+        self.podrazdel_combobox.bind("<KeyRelease>", self.podrazdel_list)
+        self.podrazdel_combobox.bind("<<ComboboxSelected>>", self.on_select)
 
         # Создаем и настраиваем стиль
         style = ttk.Style()
         style.configure("Custom.Treeview.Heading",
                         padding=(0, 5, 0, 25),
-                        # rowheight=40,  # Высота строки заголовка
                         font=('Arial', 10, 'bold'))  # Можно уменьшить шрифт если нужно
 
         columns = ("city_phone", "internal_phone", "room", "last_name", "first_name", "patronymic", "position",
@@ -107,7 +140,7 @@ class Window:
         # Многострочные заголовки
         headings = {
             "city_phone": "Городской\nномер",
-            "internal_phone": "Корпоративный\nтелефон",
+            "internal_phone": "Корп.\nтелефон",
             "room": "Номер\nкомнаты",
             "last_name": "Фамилия",
             "first_name": "Имя",
@@ -116,7 +149,6 @@ class Window:
             "department": "Отдел",
             "location": "Место\nрасположения"
         }
-        # self.tree = ttk.Treeview(self.frame_osfr, columns=columns, show="headings", height=15)
         self.tree = ttk.Treeview(self.frame_osfr, columns=columns, show="headings",
                                  height=15, style="Custom.Treeview")
         # Сначала настраиваем все заголовки
@@ -143,3 +175,5 @@ class Window:
         self.tree.pack(fill='both', expand=True, side='left', padx=5, pady=5)
         scrollbar.pack(side='right', fill='y')
 
+    def on_select(self):
+        pass

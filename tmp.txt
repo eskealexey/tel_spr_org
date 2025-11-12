@@ -1,127 +1,340 @@
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-import json
-
-class Window:
-    def __init__(self, root):
-        self.app = App()  # Композиция вместо наследования
-        self.root = root
-        self.root.geometry("900x500")
-        self.root.title(f'{self.app.description} v.{self.app.version}')
-        self.root.resizable(True, True)
-        self.create_menu()
-        self.create_widgets()
-
-    def create_menu(self):
-        menubar = tk.Menu(self.root)
-        file_menu = tk.Menu(menubar, tearoff=0)
-        file_menu.add_command(label="Открыть", command=self.open_file_xls)
-        file_menu.add_command(label="Открыть JSON", command=self.open_file_json)  # Новая команда
-        file_menu.add_separator()
-        file_menu.add_command(label="Выход", command=self.root.quit)
-        menubar.add_cascade(label="Файл", menu=file_menu)
-        self.root.config(menu=menubar)
-
-    def open_file_xls(self):
-        file_path = filedialog.askopenfilename(
-            filetypes=[("Excel files", "*.xlsx *.xls"), ("All files", "*.*")]
-        )
-        if not file_path:
-            return
-        try:
-            load_xls(file_path)
-        except Exception as e:
-            messagebox.showerror("Ошибка", f"Не удалось загрузить файл:\n{str(e)}")
-
-    def open_file_json(self):
-        file_path = filedialog.askopenfilename(
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
-        )
-        if not file_path:
-            return
-        try:
-            self.load_json(file_path)
-        except Exception as e:
-            messagebox.showerror("Ошибка", f"Не удалось загрузить JSON файл:\n{str(e)}")
-
-    def load_json(self, file_path):
-        """Загрузка и отображение JSON данных"""
-        with open(file_path, 'r', encoding='utf-8') as file:
-            data = json.load(file)
-
-        # Очищаем существующие данные в таблице
-        for item in self.tree.get_children():
-            self.tree.delete(item)
-
-        # Добавляем данные в таблицу
-        for item in data:
-            self.tree.insert("", "end", values=(
-                item.get("ФАМИЛИЯ", ""),
-                item.get("ИМЯ", ""),
-                item.get("ОТЧЕСТВО", ""),
-                item.get("ДОЛЖНОСТЬ", ""),
-                item.get("Отдел", ""),
-                item.get("Городской номер", ""),
-                item.get("Кор. тел.", ""),
-                item.get("№ комн.", ""),
-                item.get("Место расположения", "")
-            ))
-
-    def create_widgets(self):
-        frame_top = tk.Frame(self.root)
-        frame_top.pack(padx=10, pady=10, fill='x')
-
-        self.notebook = ttk.Notebook(self.root)
-        self.notebook.pack(fill='both', expand=True, padx=10, pady=10)
-
-        # Вкладка 1: Контакты
-        self.frame_osfr = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_osfr, text="ОСФР")
-
-        # Вкладка 2: Отделы
-        self.frame_ks = ttk.Frame(self.notebook)
-        self.notebook.add(self.frame_ks, text="Клиентские службы")
-
-        # Создаем виджеты для вкладки "ОСФР"
-        self.create_osfr_tab()
-
-    def create_osfr_tab(self):
-        # Верхняя панель
-        frame_top = tk.Frame(self.frame_osfr)
-        frame_top.pack(padx=10, pady=10, fill='x')
-
-        # Создаём Treeview с колонками
-        columns = ("Фамилия", "Имя", "Отчество", "Должность", "Отдел",
-                  "Городской номер", "Кор. тел.", "№ комн.", "Место расположения")
-
-        self.tree = ttk.Treeview(self.frame_osfr, columns=columns, show="headings", height=15)
-
-        # Настраиваем заголовки колонок
-        for col in columns:
-            self.tree.heading(col, text=col)
-            self.tree.column(col, width=100, anchor="w")
-
-        # Настраиваем ширину колонок
-        self.tree.column("Фамилия", width=120)
-        self.tree.column("Имя", width=100)
-        self.tree.column("Отчество", width=120)
-        self.tree.column("Должность", width=150)
-        self.tree.column("Отдел", width=120)
-        self.tree.column("Городской номер", width=100)
-        self.tree.column("Кор. тел.", width=80)
-        self.tree.column("№ комн.", width=60)
-        self.tree.column("Место расположения", width=200)
-
-        # Scrollbar для таблицы
-        scrollbar = ttk.Scrollbar(self.frame_osfr, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=scrollbar.set)
-
-        # Позиционируем виджеты
-        self.tree.pack(fill='both', expand=True, side='left', padx=5, pady=5)
-        scrollbar.pack(side='right', fill='y')
-
-# Пример использования
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = Window(root)
-    root.mainloop()
+ import json
+# import tkinter as tk
+# from tkinter import filedialog, messagebox, ttk
+#
+# from class_tel_spr import load_xls
+#
+#
+# class App:
+#     def __init__(self):
+#         self.name = "app"
+#         self.version = "0.0.1"
+#         self.author = "Eske Alexey"
+#         self.description = "Телефонный справочник"
+#
+#
+# class Window:
+#     """
+#     Класс окна приложения
+#     """
+#
+#     def __init__(self, root):
+#         self.podrazdel_list = ["--- Выберите подразделение ---", ]
+#         self.original_data = []  # Храним оригинальные данные для фильтрации
+#         self.app = App()  # Композиция вместо наследования
+#         self.root = root
+#         self.root.geometry("1200x500")
+#         self.root.title(f'{self.app.description} v.{self.app.version}')
+#         self.root.resizable(True, True)
+#         self.create_menu()
+#         self.create_widgets()
+#
+#     def create_menu(self):
+#         """
+#         Создает меню для приложения
+#         """
+#         menubar = tk.Menu(self.root)
+#         file_menu = tk.Menu(menubar, tearoff=0)
+#         file_menu.add_command(label="Открыть", command=self.open_file_xls)
+#         file_menu.add_separator()
+#         file_menu.add_command(label="Выход", command=self.root.destroy)
+#         menubar.add_cascade(label="Файл", menu=file_menu)
+#         self.root.config(menu=menubar)
+#
+#     def open_file_xls(self):
+#         """
+#         Открывает диалоговое окно для выбора файла
+#         """
+#         file_path = filedialog.askopenfilename(
+#             filetypes=[("Excel files", "*.xlsx *.xls"), ("All files", "*.*")]
+#         )
+#         if not file_path:
+#             return
+#         try:
+#             load_xls(file_path)
+#             self.load_json_osfr('JSON/osfr.json')
+#         except Exception as e:
+#             messagebox.showerror("Ошибка", f"Не удалось загрузить файл:\n{str(e)}")
+#
+#     def create_widgets(self):
+#         """
+#         Создает виджеты для окна приложения
+#         """
+#         frame_top = tk.Frame(self.root)
+#         frame_top.pack(padx=10, pady=10, fill='x')
+#
+#         self.notebook = ttk.Notebook(self.root)
+#         self.notebook.pack(fill='both', expand=True, padx=10, pady=10)
+#
+#         # Вкладка 1: телефоны ОСФР
+#         self.frame_osfr = ttk.Frame(self.notebook)
+#         self.notebook.add(self.frame_osfr, text="ОСФР")
+#
+#         # Вкладка 2: телефоны клиентских служб
+#         self.frame_ks = ttk.Frame(self.notebook)
+#         self.notebook.add(self.frame_ks, text="Клиентские службы")
+#
+#         # Создаем виджеты для вкладки "ОСФР"
+#         self.create_osfr_tab()
+#         self.load_json_osfr('JSON/osfr.json')
+#
+#     def load_json_osfr(self, file_path):
+#         """
+#         Загрузка и отображение JSON данных в таблицу OSFR
+#         """
+#         try:
+#             with open(file_path, 'r', encoding='utf-8') as file:
+#                 data = json.load(file)
+#
+#             # Сохраняем оригинальные данные для фильтрации
+#             self.original_data = data
+#
+#             # Очищаем существующие данные в таблице
+#             for item in self.tree.get_children():
+#                 self.tree.delete(item)
+#
+#             # Добавляем данные в таблицу
+#             for item in data:
+#                 self.tree.insert("", "end", values=(
+#                     item.get("Городской номер", ""),
+#                     item.get("Кор. тел.", ""),
+#                     item.get("№ комн.", ""),
+#                     item.get("ФАМИЛИЯ", ""),
+#                     item.get("ИМЯ", ""),
+#                     item.get("ОТЧЕСТВО", ""),
+#                     item.get("ДОЛЖНОСТЬ", ""),
+#                     item.get("Отдел", ""),
+#                     item.get("Место расположения", "")
+#                 ))
+#             self.podrazdel_list = self.create_podrazdel_list(data)
+#             self.update_combobox()
+#             print(self.podrazdel_list)
+#
+#         except Exception as e:
+#             messagebox.showerror("Ошибка", f"Нет данных для отображения:\nЗагрузите файл с номерами телефонов")
+#             print(str(e))
+#
+#     def create_podrazdel_list(self, data):
+#         lst = []
+#         for item in data:
+#             if item.get("Отдел") not in lst and item.get("Отдел") != "":
+#                 lst.append(item.get("Отдел"))
+#         lst = ["--- Выберите подразделение ---", ] + lst
+#         return lst
+#
+#     def podrazdel_filter(self, event=None):
+#         # Фильтрация списка подразделений по введенному тексту
+#         current_text = self.podrazdel_var.get()
+#         if current_text:
+#             filtered_list = [item for item in self.podrazdel_list if current_text.lower() in item.lower()]
+#             self.podrazdel_combobox['values'] = filtered_list
+#         else:
+#             self.podrazdel_combobox['values'] = self.podrazdel_list
+#
+#     def create_osfr_tab(self):
+#         """
+#         Создает таблицу для телефонов ОСФР
+#         """
+#         # Верхняя панель с фильтрами
+#         frame_filters = tk.Frame(self.frame_osfr)
+#         frame_filters.pack(padx=10, pady=10, fill='x')
+#
+#         # Поиск по ФИО и телефонам
+#         label_search = tk.Label(frame_filters, text="Поиск (ФИО/телефон):")
+#         label_search.pack(side='left', padx=5)
+#
+#         self.search_var = tk.StringVar()
+#         self.search_entry = tk.Entry(
+#             frame_filters,
+#             textvariable=self.search_var,
+#             font=('Arial', 10),
+#             width=30
+#         )
+#         self.search_entry.pack(side='left', padx=5)
+#         self.search_entry.bind("<KeyRelease>", self.search_data)
+#
+#         # Кнопка сброса поиска
+#         btn_clear_search = tk.Button(
+#             frame_filters,
+#             text="Очистить поиск",
+#             command=self.clear_search
+#         )
+#         btn_clear_search.pack(side='left', padx=5)
+#
+#         # Фильтр по подразделениям
+#         label_dept = tk.Label(frame_filters, text="Подразделение:")
+#         label_dept.pack(side='left', padx=5)
+#
+#         self.podrazdel_var = tk.StringVar()
+#         self.podrazdel_combobox = ttk.Combobox(
+#             frame_filters,
+#             textvariable=self.podrazdel_var,
+#             state="normal",
+#             font=('Arial', 10),
+#             width=30
+#         )
+#         self.podrazdel_combobox.pack(side='left', padx=5)
+#         self.podrazdel_combobox.bind("<KeyRelease>", self.podrazdel_filter)
+#         self.podrazdel_combobox.bind("<<ComboboxSelected>>", self.on_select)
+#
+#         # Кнопка сброса фильтра подразделения
+#         btn_reset_dept = tk.Button(
+#             frame_filters,
+#             text="Сбросить фильтр",
+#             command=self.reset_filter
+#         )
+#         btn_reset_dept.pack(side='left', padx=5)
+#
+#         # Создаем и настраиваем стиль
+#         style = ttk.Style()
+#         style.configure("Custom.Treeview.Heading",
+#                         padding=(0, 5, 0, 25),
+#                         font=('Arial', 10, 'bold'))
+#
+#         columns = ("city_phone", "internal_phone", "room", "last_name", "first_name", "patronymic", "position",
+#                    "department", "location")
+#
+#         # Многострочные заголовки
+#         headings = {
+#             "city_phone": "Городской\nномер",
+#             "internal_phone": "Корп.\nтелефон",
+#             "room": "Номер\nкомнаты",
+#             "last_name": "Фамилия",
+#             "first_name": "Имя",
+#             "patronymic": "Отчество",
+#             "position": "Должность",
+#             "department": "Отдел",
+#             "location": "Место\nрасположения"
+#         }
+#         self.tree = ttk.Treeview(self.frame_osfr, columns=columns, show="headings",
+#                                  height=15, style="Custom.Treeview")
+#         # Сначала настраиваем все заголовки
+#         for col in columns:
+#             self.tree.heading(col, text=headings[col], anchor="center")
+#             self.tree.column(col, width=100, anchor="w")
+#
+#         # Затем настраиваем индивидуальные ширины
+#         self.tree.column("last_name", width=120)
+#         self.tree.column("first_name", width=100)
+#         self.tree.column("patronymic", width=120)
+#         self.tree.column("position", width=150)
+#         self.tree.column("department", width=120)
+#         self.tree.column("city_phone", width=100)
+#         self.tree.column("internal_phone", width=100)
+#         self.tree.column("room", width=80)
+#         self.tree.column("location", width=200)
+#
+#         # Scrollbar для таблицы
+#         scrollbar = ttk.Scrollbar(self.frame_osfr, orient="vertical", command=self.tree.yview)
+#         self.tree.configure(yscrollcommand=scrollbar.set)
+#
+#         # Позиционируем виджеты
+#         self.tree.pack(fill='both', expand=True, side='left', padx=5, pady=5)
+#         scrollbar.pack(side='right', fill='y')
+#
+#     def search_data(self, event=None):
+#         """Поиск данных по ФИО и номерам телефонов"""
+#         search_text = self.search_var.get().lower().strip()
+#
+#         if not search_text:
+#             # Если поле поиска пустое, применяем только фильтр по подразделению
+#             self.apply_filters()
+#             return
+#
+#         # Очищаем таблицу
+#         for item in self.tree.get_children():
+#             self.tree.delete(item)
+#
+#         # Фильтруем данные по поисковому запросу
+#         filtered_data = []
+#         for item in self.original_data:
+#             # Проверяем все поля ФИО и телефоны
+#             if (search_text in item.get("ФАМИЛИЯ", "").lower() or
+#                     search_text in item.get("ИМЯ", "").lower() or
+#                     search_text in item.get("ОТЧЕСТВО", "").lower() or
+#                     search_text in item.get("Городской номер", "").lower() or
+#                     search_text in item.get("Кор. тел.", "").lower() or
+#                     search_text in str(item.get("№ комн.", "")).lower()):
+#                 filtered_data.append(item)
+#
+#         # Применяем дополнительный фильтр по подразделению если он выбран
+#         selected_dept = self.podrazdel_var.get()
+#         if selected_dept and selected_dept != "--- Выберите подразделение ---":
+#             filtered_data = [item for item in filtered_data if item.get("Отдел") == selected_dept]
+#
+#         # Добавляем отфильтрованные данные в таблицу
+#         for item in filtered_data:
+#             self.tree.insert("", "end", values=(
+#                 item.get("Городской номер", ""),
+#                 item.get("Кор. тел.", ""),
+#                 item.get("№ комн.", ""),
+#                 item.get("ФАМИЛИЯ", ""),
+#                 item.get("ИМЯ", ""),
+#                 item.get("ОТЧЕСТВО", ""),
+#                 item.get("ДОЛЖНОСТЬ", ""),
+#                 item.get("Отдел", ""),
+#                 item.get("Место расположения", "")
+#             ))
+#
+#     def apply_filters(self):
+#         """Применяет все активные фильтры"""
+#         selected_dept = self.podrazdel_var.get()
+#         search_text = self.search_var.get().lower().strip()
+#
+#         # Очищаем таблицу
+#         for item in self.tree.get_children():
+#             self.tree.delete(item)
+#
+#         # Начинаем с оригинальных данных
+#         filtered_data = self.original_data
+#
+#         # Применяем фильтр по подразделению
+#         if selected_dept and selected_dept != "--- Выберите подразделение ---":
+#             filtered_data = [item for item in filtered_data if item.get("Отдел") == selected_dept]
+#
+#         # Применяем поисковый фильтр
+#         if search_text:
+#             filtered_data = [item for item in filtered_data if (
+#                     search_text in item.get("ФАМИЛИЯ", "").lower() or
+#                     search_text in item.get("ИМЯ", "").lower() or
+#                     search_text in item.get("ОТЧЕСТВО", "").lower() or
+#                     search_text in item.get("Городской номер", "").lower() or
+#                     search_text in item.get("Кор. тел.", "").lower() or
+#                     search_text in str(item.get("№ комн.", "")).lower()
+#             )]
+#
+#         # Добавляем отфильтрованные данные в таблицу
+#         for item in filtered_data:
+#             self.tree.insert("", "end", values=(
+#                 item.get("Городской номер", ""),
+#                 item.get("Кор. тел.", ""),
+#                 item.get("№ комн.", ""),
+#                 item.get("ФАМИЛИЯ", ""),
+#                 item.get("ИМЯ", ""),
+#                 item.get("ОТЧЕСТВО", ""),
+#                 item.get("ДОЛЖНОСТЬ", ""),
+#                 item.get("Отдел", ""),
+#                 item.get("Место расположения", "")
+#             ))
+#
+#     def on_select(self, event=None):
+#         """Обработчик выбора подразделения"""
+#         self.apply_filters()
+#
+#     def filter_treeview(self, department):
+#         """Фильтрация данных в treeview по отделу"""
+#         self.apply_filters()
+#
+#     def clear_search(self):
+#         """Очистка поля поиска"""
+#         self.search_var.set("")
+#         self.apply_filters()
+#
+#     def reset_filter(self):
+#         """Сброс фильтра подразделения"""
+#         self.podrazdel_var.set("")
+#         self.apply_filters()
+#
+#     def update_combobox(self):
+#         """Обновление значений combobox"""
+#         self.podrazdel_combobox['values'] = self.podrazdel_list

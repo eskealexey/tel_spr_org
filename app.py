@@ -300,13 +300,13 @@ class ClientService(BaseTab):
             width=40
         )
         self.search_entry.pack(side='left', padx=5)
-        # self.search_entry.bind("<KeyRelease>", self.search_data)
+        self.search_entry.bind("<KeyRelease>", self.search_data)
 
         # Кнопка сброса поиска
         btn_clear_search = tk.Button(
             search_frame,
             text="Очистить поиск",
-            # command=self.clear_search,
+            command=self.clear_search,
             font=('Arial', 9)
         )
         btn_clear_search.pack(side='left', padx=5)
@@ -327,20 +327,46 @@ class ClientService(BaseTab):
             width=100
         )
         self.podrazdel_combobox.pack(side='left', padx=5)
-        # self.podrazdel_combobox.bind("<KeyRelease>", self.podrazdel_filter)
-        # self.podrazdel_combobox.bind("<<ComboboxSelected>>", self.on_select)
+        self.podrazdel_combobox.bind("<KeyRelease>", self.podrazdel_filter)
+        self.podrazdel_combobox.bind("<<ComboboxSelected>>", self.on_select)
 
         # Кнопка сброса фильтра подразделения
         btn_reset_dept = tk.Button(
             dept_frame,
             text="Сбросить фильтр",
-            # command=self.reset_filter,
+            command=self.reset_filter,
             font=('Arial', 9)
         )
         btn_reset_dept.pack(side='left', padx=5)
 
         # Создаем таблицу
         self.create_table()
+
+    def create_podrazdel_list(self, data):
+        """Создает список подразделений"""
+        lst = []
+        for item in data:
+            if item.get("отдел") not in lst and item.get("отдел") != "":
+                lst.append(item.get("отдел"))
+        lst = ["--- Выберите Клиентскую службу ---", ] + lst
+        return lst
+
+    def search_data(self, event=None):
+        """Поиск данных по ФИО и номерам телефонов"""
+        self.apply_filters()
+
+    def update_combobox(self):
+        """Обновление значений combobox"""
+        self.podrazdel_combobox['values'] = self.podrazdel_list
+
+    def podrazdel_filter(self, event=None):
+        """Фильтрация списка подразделений по введенному тексту"""
+        current_text = self.podrazdel_var.get()
+        if current_text:
+            filtered_list = [item for item in self.podrazdel_list if current_text.lower() in item.lower()]
+            self.podrazdel_combobox['values'] = filtered_list
+        else:
+            self.podrazdel_combobox['values'] = self.podrazdel_list
 
     def create_table(self):
         """Создает таблицу для отображения данных"""
@@ -396,7 +422,7 @@ class ClientService(BaseTab):
         # Здесь можно добавить специфичные для клиентских служб виджеты
         # Например, другую таблицу или фильтры
 
-    def load_data(self, file_path):
+    def load_data(self, file_path='JSON/ks.json'):
         """Загрузка данных для клиентских служб"""
         # Реализация загрузки данных для клиентских служб
 
@@ -413,14 +439,13 @@ class ClientService(BaseTab):
             # Добавляем данные в таблицу
             for item in data:
                 self.tree.insert("", "end", values=(
-                    item.get("Городской номер", ""),
-                    item.get("Кор. тел.", ""),
-                    item.get("№ комн.", ""),
-                    item.get("ФАМИЛИЯ", ""),
-                    item.get("ИМЯ", ""),
-                    item.get("ОТЧЕСТВО", ""),
-                    item.get("ДОЛЖНОСТЬ", ""),
-                    item.get("Отдел", ""),
+                    item.get("город", ""),
+                    item.get("кспд", ""),
+                    item.get("Фамилия", ""),
+                    item.get("Имя", ""),
+                    item.get("Отчество", ""),
+                    item.get("Должность", ""),
+                    item.get("отдел", ""),
                     item.get("Место расположения", "")
                 ))
 
@@ -430,6 +455,58 @@ class ClientService(BaseTab):
         except Exception as e:
             messagebox.showerror("Ошибка", f"Нет данных для отображения:\nЗагрузите файл с номерами телефонов")
             print(str(e))
+
+    def apply_filters(self):
+        """Применяет все активные фильтры"""
+        selected_dept = self.podrazdel_var.get()
+        search_text = self.search_var.get().lower().strip()
+
+        # Очищаем таблицу
+        self.clear_table()
+
+        # Начинаем с оригинальных данных
+        filtered_data = self.original_data
+
+        # Применяем фильтр по подразделению
+        if selected_dept and selected_dept != "--- Выберите Клиентскую службу ---":
+            filtered_data = [item for item in filtered_data if item.get("отдел") == selected_dept]
+
+        # Применяем поисковый фильтр
+        if search_text:
+            filtered_data = [item for item in filtered_data if (
+                    search_text in item.get("Фамилия", "").lower() or
+                    search_text in item.get("Имя", "").lower() or
+                    search_text in item.get("Отчество", "").lower() or
+                    search_text in item.get("город", "").lower() or
+                    search_text in item.get("кспд", "").lower()
+            )]
+
+        # Добавляем отфильтрованные данные в таблицу
+        for item in filtered_data:
+            self.tree.insert("", "end", values=(
+                item.get("город", ""),
+                item.get("кспд", ""),
+                item.get("Фамилия", ""),
+                item.get("Имя", ""),
+                item.get("Отчество", ""),
+                item.get("Должность", ""),
+                item.get("отдел", ""),
+                item.get("Место расположения", "")
+            ))
+
+    def on_select(self, event=None):
+        """Обработчик выбора подразделения"""
+        self.apply_filters()
+
+    def clear_search(self):
+        """Очистка поля поиска"""
+        self.search_var.set("")
+        self.apply_filters()
+
+    def reset_filter(self):
+        """Сброс фильтра подразделения"""
+        self.podrazdel_var.set("")
+        self.apply_filters()
 
 
 class Window:
@@ -472,6 +549,8 @@ class Window:
             load_xls(file_path)
             if self.osfr_tab:
                 self.osfr_tab.load_data('JSON/osfr.json')
+            if self.client_service_tab:
+                self.client_service_tab.load_data('JSON/ks.json')
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось загрузить файл:\n{str(e)}")
 
